@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Royal Game of Ur – Democratic Edition</title>
+<style>
+:root{--bg:#f3ead8;--ink:#2a2118;--tile:#d9c49a;--tile2:#c9b184;--ros:#2f5d8a;--a:#b8372b;--b:#1f3a5f;--mut:#6b5b45;--card:#ebdfc6;--gold:#e6b800;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1610;--ink:#efe3c8;--tile:#4a3b26;--tile2:#3d3120;--ros:#5b8fc4;--a:#e0614f;--b:#7ea6d8;--mut:#a89573;--card:#2a2218;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1b1610;--ink:#efe3c8;--tile:#4a3b26;--tile2:#3d3120;--ros:#5b8fc4;--a:#e0614f;--b:#7ea6d8;--mut:#a89573;--card:#2a2218;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Georgia,"Times New Roman",serif;display:flex;flex-direction:column;align-items:center;padding:16px}
+h1{font-size:1.7rem;margin:.2em 0 0;text-align:center}
+.sub{color:var(--mut);margin:0 0 12px;text-align:center;max-width:46ch;font-size:.95rem}
+.wrap{width:100%;max-width:640px}
+.bar2{display:flex;gap:8px;margin-bottom:8px;font-size:.95rem}
+.side{flex:1;background:var(--card);border-radius:8px;padding:8px 10px}
+.side b{display:block}
+.pips{display:flex;gap:4px;flex-wrap:wrap;align-items:center;min-height:24px;margin-top:4px}
+.pip{width:22px;height:22px;border-radius:50%}
+.pip.A,.pc.A{background:var(--a)}.pip.B,.pc.B{background:var(--b)}
+.pip.go{cursor:pointer;outline:3px solid var(--gold);animation:p 1s infinite alternate}
+.board{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+.c{aspect-ratio:1;border-radius:6px;background:var(--tile);position:relative;display:flex;align-items:center;justify-content:center}
+.c.gap{background:transparent}
+.c.ros{background:var(--tile2);box-shadow:inset 0 0 0 3px var(--ros)}
+.c.ros::after{content:"✺";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ros);font-size:1.6rem;opacity:.7}
+.pc{width:68%;height:68%;border-radius:50%;z-index:2;border:3px solid rgba(255,255,255,.55);box-shadow:0 2px 3px rgba(0,0,0,.35)}
+.pc.go{cursor:pointer;outline:3px solid var(--gold);animation:p 1s infinite alternate}
+.c.tgt{box-shadow:inset 0 0 0 3px var(--gold)}
+@keyframes p{to{transform:scale(1.1)}}
+@media (prefers-reduced-motion:reduce){.pc.go,.pip.go{animation:none}}
+.ctl{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+button{font:inherit;padding:10px 16px;border-radius:8px;border:2px solid var(--ink);background:var(--card);color:var(--ink);cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,.pc:focus-visible,.pip:focus-visible{outline:3px solid var(--gold)}
+button.pri{background:var(--ink);color:var(--bg)}
+.dice{display:flex;gap:6px}.d{width:26px;height:26px;background:var(--card);border:2px solid var(--ink);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.d.on{background:var(--ink)}
+.roll{font-size:1.4rem;min-width:2ch}
+.msg{margin-top:10px;min-height:3.2em;background:var(--card);padding:8px 12px;border-radius:8px}
+#ballot{margin-top:10px;display:grid;gap:6px}
+#ballot:empty{display:none}
+.row{display:grid;grid-template-columns:1fr auto;gap:2px 10px;text-align:left;background:var(--card);border:2px solid transparent;border-radius:8px;padding:8px 12px;width:100%}
+button.row{cursor:pointer;border-color:var(--ink)}
+button.row:hover{border-color:var(--gold)}
+.row.win{border-color:var(--gold)}
+.vt{white-space:nowrap}
+.barx{grid-column:1/3;height:6px;border-radius:3px;background:var(--tile)}
+.barx i{display:block;height:100%;border-radius:3px;background:var(--ros)}
+#ballot small,.rules{color:var(--mut);font-size:.85rem}
+.rules{margin-top:12px;display:block}
+</style>
+</head>
+<body>
+<h1>Royal Game of Ur</h1>
+<p class="sub">Democratic edition: your pieces are citizens, and every move is put to a vote.</p>
+<div class="wrap">
+ <div class="bar2">
+  <div class="side"><b style="color:var(--a)">You (the Speaker)</b><div id="sa"></div><div>Vetoes left: <span id="va">2</span></div></div>
+  <div class="side"><b style="color:var(--b)">Council AI</b><div id="sb"></div><div>Vetoes left: <span id="vb">2</span></div></div>
+ </div>
+ <div class="board" id="board" role="grid" aria-label="Game board"></div>
+ <div class="ctl">
+  <button class="pri" id="roll">Roll dice</button>
+  <div class="dice" id="dice"></div><div class="roll" id="rv">–</div>
+  <button id="veto" disabled>Veto AI move</button>
+  <button id="new">New game</button>
+ </div>
+ <div class="msg" id="msg" aria-live="polite"></div>
+ <div id="ballot"></div>
+ <div id="laws" class="rules"></div>
+ <span class="rules"><b>How it works.</b> Race all 7 pieces round the board and off with an exact roll. Land on ✺ for an extra turn; the centre ✺ is safe, and elsewhere in the shared lane you capture by landing on an enemy. <b>Democracy:</b> each citizen piece belongs to a faction and votes on every move: 🗡 Hawks back captures, 🛡 Guardians back rosettes and safe squares, 🏃 Runners back pushing the leader. As Speaker you add 2 votes (⭐) to one move, but the people can overrule you. The most votes wins, ties go to the Speaker. The losing side may then spend one of its 2 vetoes to throw out the winning move, and the runner-up plays instead. With only one legal move there is no vote. <b>Referendums:</b> every third round of yours, a law is put to the vote. Every citizen on both sides votes Aye or Nay by faction, and each Speaker adds 2 votes. A law stays in force until a later vote repeals it.</span>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const ROS=[4,8,14];
+let pos,turn,roll,vet,busy,over,pending,legal,tally,voting,laws,rounds,motion,gen=0;
+const LAWS={nocap:{n:'Peace Treaty',d:'No captures: you cannot land on an enemy piece.',v:[-1,1,0]},rez:{n:'Second Chance',d:'A roll of 0 is rolled again, once.',v:[0,1,1]},cext:{n:'Spoils of War',d:'A capture earns an extra turn.',v:[1,-1,0]}};
+const later=(f,ms)=>{const g=gen;return setTimeout(()=>{if(g===gen)f()},ms)};
+function cell(p,i){const r=p?2:0;if(i<=4)return[r,4-i];if(i<=12)return[1,i-5];return[r,i===13?7:6]}
+function init(){gen++;clearTimeout(pending);pos=[Array(7).fill(0),Array(7).fill(0)];turn=0;roll=null;vet=[2,2];busy=false;over=false;legal=[];tally=[];voting=false;laws={nocap:false,rez:false,cext:false};rounds=0;motion=null;
+ $('ballot').innerHTML='';$('roll').disabled=false;$('veto').disabled=true;$('rv').textContent='–';drawDice(0);say('Your turn. Roll the dice.');render()}
+function say(t){$('msg').textContent=t}
+function drawDice(n){$('dice').innerHTML=[0,1,2,3].map(i=>`<div class="d ${i<n?'on':''}"></div>`).join('')}
+function moves(p,n){const out=[],seen=new Set();if(!n)return out;
+ pos[p].forEach((q,k)=>{const t=q+n;if(t>15||seen.has(q))return;
+  if(t<15&&pos[p].includes(t))return;
+  if(t===8&&pos[1-p].includes(8))return;
+  if(laws.nocap&&t>=5&&t<=12&&pos[1-p].includes(t))return;
+  seen.add(q);out.push({k,from:q,to:t})});return out}
+function victim(p,t){if(t<5||t>12)return -1;return pos[1-p].indexOf(t)}
+function desc(m,p){const tg=[victim(p,m.to)>=0?'captures':'',ROS.includes(m.to)?'rosette':'',m.to===15?'home':''].filter(Boolean).join(', ');
+ return(m.from?'Piece on step '+m.from:'New piece')+' to step '+m.to+(tg?' ('+tg+')':'')}
+function render(){const b=$('board');b.innerHTML='';
+ const grid={};
+ for(let p=0;p<2;p++)pos[p].forEach((q,k)=>{if(q>0&&q<15){const[r,c]=cell(p,q);grid[r+','+c]={p,k}}});
+ const tg=new Set(voting?legal.filter(m=>m.to<15).map(m=>cell(0,m.to).join(',')):[]);
+ for(let r=0;r<3;r++)for(let c=0;c<8;c++){
+  const d=document.createElement('div');d.className='c';
+  if(r!==1&&(c===4||c===5))d.className+=' gap';
+  if((c===0&&r!==1)||(c===6&&r!==1)||(r===1&&c===3))d.className+=' ros';
+  const g=grid[r+','+c];
+  if(g){const e=document.createElement('div');e.className='pc '+(g.p?'B':'A');
+   if(g.p===0&&voting&&legal.some(m=>m.k===g.k)){e.className+=' go';e.tabIndex=0;e.onclick=()=>cast(g.k);e.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' ')cast(g.k)}}
+   d.appendChild(e)}
+  if(tg.has(r+','+c)){d.className+=' tgt';const m=legal.find(x=>x.to<15&&cell(0,x.to).join(',')===r+','+c);d.style.cursor='pointer';d.onclick=()=>cast(m.k)}
+  b.appendChild(d)}
+ for(let p=0;p<2;p++){const el=$(p?'sb':'sa');el.innerHTML='';
+  const s=pos[p].filter(q=>q===0).length,h=pos[p].filter(q=>q===15).length;
+  const st=document.createElement('div');st.className='pips';st.innerHTML='<small>Waiting&nbsp;</small>'+('<div class="pip '+(p?'B':'A')+'"></div>').repeat(s);
+  const hm=document.createElement('div');hm.className='pips';hm.innerHTML='<small>Home&nbsp;</small>'+('<div class="pip '+(p?'B':'A')+'"></div>').repeat(h);
+  el.append(st,hm);
+  if(p===0&&voting){const m=legal.find(x=>x.from===0),pp=st.querySelector('.pip');if(m&&pp){pp.classList.add('go');pp.tabIndex=0;pp.title='Enter a new piece';pp.onclick=()=>cast(m.k);pp.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' ')cast(m.k)}}}}
+ $('va').textContent=vet[0];$('vb').textContent=vet[1];
+ const on=Object.keys(LAWS).filter(k=>laws[k]).map(k=>LAWS[k].n);$('laws').textContent='Laws in force: '+(on.length?on.join(', '):'none yet')+'.'}
+function fs(f,p,m){const cap=victim(p,m.to)>=0,n=Math.random()*.01;
+ if(f===0)return(cap?10:0)+m.to*.05+n;
+ if(f===1)return(ROS.includes(m.to)?8:0)+(m.to===15?6:0)+((m.to<5||m.to>=13)?3:0)+(cap?2:0)+n;
+ return m.from*.5+m.to*.1+n}
+function showBallot(final,wi){const p=turn,tot=t=>t.H+t.G+t.R+t.s,mx=Math.max(1,...tally.map(tot));
+ $('ballot').innerHTML='<b>'+(p?'The AI ballot':'The ballot')+' (roll '+roll+')</b>'+tally.map((t,i)=>{
+  const inner=`<span>${desc(t.m,p)}</span><span class="vt">🗡${t.H} 🛡${t.G} 🏃${t.R}${t.s?' ⭐'+t.s:''} = <b>${tot(t)}</b></span><span class="barx"><i style="width:${tot(t)/mx*100}%"></i></span>`;
+  return(!final&&!p)?`<button class="row" data-k="${t.m.k}">${inner}</button>`:`<div class="row${i===wi?' win':''}">${inner}</div>`}).join('')
+  +'<small>🗡 Hawks want captures · 🛡 Guardians want safety · 🏃 Runners push the leader · ⭐ Speaker’s 2 votes</small>';
+ document.querySelectorAll('#ballot button.row').forEach(bt=>bt.onclick=()=>cast(+bt.dataset.k))}
+$('roll').onclick=()=>{if(busy||over||turn!==0||roll!==null||voting||motion)return;doRoll()};
+function doRoll(){const rl=()=>[0,0,0,0].reduce(a=>a+(Math.random()<.5),0);roll=rl();if(!roll&&laws.rez)roll=rl();drawDice(roll);$('rv').textContent=roll;$('roll').disabled=true;$('ballot').innerHTML='';
+ const L=moves(turn,roll),who=turn?'AI':'You';
+ if(!L.length){say(who+' rolled '+roll+(roll?' with no legal move.':'.'));return endTurn(false,1500)}
+ if(L.length===1){say(who+' rolled '+roll+'. Only one legal move, so no vote.');busy=true;return later(()=>play(turn,L[0],''),1000)}
+ tally=L.map(m=>({m,H:0,G:0,R:0,s:0}));
+ pos[turn].forEach((q,j)=>{if(q===15)return;const f=j%3;let best=0,bs=-1e9;L.forEach((m,i)=>{const s=fs(f,turn,m);if(s>bs){bs=s;best=i}});tally[best]['HGR'[f]]++});
+ if(turn===0){legal=L;voting=true;say('You rolled '+roll+'. The citizens have leaned. Back one move with your 2 votes: click it below or on the board.');render();showBallot(false)}
+ else{busy=true;let bi=0,bs=-1e9;L.forEach((m,i)=>{const s=(victim(1,m.to)>=0?10:0)+(m.to===15?8:0)+(ROS.includes(m.to)?6:0)+m.to*.1+Math.random()*.5;if(s>bs){bs=s;bi=i}});
+  tally[bi].s=2;later(()=>resolve(1,bi),700);say('AI rolled '+roll+'. The council is voting…')}}
+function cast(k){if(!voting||turn!==0)return;const i=tally.findIndex(t=>t.m.k===k);if(i<0)return;voting=false;legal=[];busy=true;tally[i].s=2;resolve(0,i)}
+function resolve(p,sp){const tot=t=>t.H+t.G+t.R+t.s;
+ const ord=tally.map((t,i)=>i).sort((a,b)=>tot(tally[b])-tot(tally[a])||((b===sp)-(a===sp)));
+ const win=tally[ord[0]].m,run=tally[ord[1]].m;
+ showBallot(true,ord[0]);render();
+ const pre=ord[0]!==sp?(p?'The people overruled the AI. ':'The people overruled you! '):'The vote carries the Speaker. ';
+ if(p===0){const strong=victim(0,win.to)>=0||ROS.includes(win.to)||win.to===15;
+  if(vet[1]>0&&strong&&Math.random()<.4){vet[1]--;render();say(pre+'The AI vetoes the result! The runner-up plays instead.');later(()=>play(0,run,'Vetoed. '),1500)}
+  else{say(pre);later(()=>play(0,win,pre),900)}}
+ else{const can=vet[0]>0;say(pre+'AI plans: '+desc(win,1)+'.'+(can?' Veto it?':''));$('veto').disabled=!can;
+  $('veto').onclick=()=>{clearTimeout(pending);vet[0]--;$('veto').disabled=true;render();say('You vetoed! The runner-up plays instead.');pending=later(()=>play(1,run,'You vetoed the result. '),1100)};
+  pending=later(()=>{$('veto').disabled=true;play(1,win,pre)},can?3000:1000)}}
+function apply(p,m){const cap=victim(p,m.to);pos[p][m.k]=m.to;let note='';
+ if(cap>=0){pos[1-p][cap]=0;note=' and captured a piece!'}
+ if(m.to===15)note+=' A piece is home.';
+ if(pos[p].every(q=>q===15)){over=true;render();say(p?'The council wins. Better luck next time.':'You win! Long live the republic.');$('roll').disabled=true;return true}
+ return{extra:ROS.includes(m.to)||(laws.cext&&cap>=0),note}}
+function play(p,m,pre){const r=apply(p,m);if(r===true){busy=false;return}legal=[];voting=false;render();
+ say(pre+(p?'AI':'You')+' moved'+r.note+(r.extra?(p?' Extra turn: the AI rolls again.':' Extra turn: roll again!'):''));
+ endTurn(r.extra,p?1600:900)}
+function endTurn(extra,delay){if(over)return;roll=null;legal=[];voting=false;busy=true;
+ later(()=>{busy=false;if(!extra)turn=1-turn;render();
+  if(turn===0){if(!extra&&++rounds%3===0)return referendum();$('roll').disabled=false;if(!extra)say($('msg').textContent+' Your turn: roll the dice.')}
+  else{$('roll').disabled=true;busy=true;later(()=>{busy=false;doRoll()},600)}},delay)}
+function motionTally(){const m=motion;return{aye:m.aye+(m.ai?2:0)+(m.me==='aye'?2:0),nay:m.nay+(m.ai?0:2)+(m.me==='nay'?2:0)}}
+function referendum(){const ks=Object.keys(LAWS),key=ks[Math.floor(Math.random()*ks.length)],on=laws[key];
+ let aye=0,nay=0;[0,1].forEach(p=>pos[p].forEach((q,j)=>{if(q===15)return;const s=LAWS[key].v[j%3]*(on?-1:1);if(s>0)aye++;else if(s<0)nay++}));
+ motion={key,on,aye,nay,ai:key==='nocap'?on:!on,me:null};$('roll').disabled=true;$('ballot').innerHTML='';
+ say('Referendum! Citizens of both sides vote on a law. Cast your 2 votes.');showMotion()}
+function showMotion(){const m=motion,L=LAWS[m.key],t=motionTally(),mx=Math.max(1,t.aye,t.nay),fin=!!m.me;
+ const row=(side,lab,n,sp)=>{const inner=`<span>${lab}</span><span class="vt">${n}${sp?' (incl. ⭐2)':''}</span><span class="barx"><i style="width:${n/mx*100}%"></i></span>`;return fin?`<div class="row">${inner}</div>`:`<button class="row" data-side="${side}">${inner}</button>`};
+ $('ballot').innerHTML=`<b>Referendum: ${L.n}${m.on?' (repeal)':''}</b><span>${L.d}</span>`+row('aye','Aye: '+(m.on?'repeal it':'pass it'),t.aye,m.ai||m.me==='aye')+row('nay','Nay: '+(m.on?'keep it':'reject it'),t.nay,!m.ai||m.me==='nay')+`<small>🗡 Hawks, 🛡 Guardians and 🏃 Runners on both sides vote. The AI Speaker has backed ${m.ai?'Aye':'Nay'}. Ties fail.</small>`;
+ document.querySelectorAll('#ballot button.row[data-side]').forEach(b=>b.onclick=()=>voteMotion(b.dataset.side))}
+function voteMotion(side){if(!motion||motion.me)return;motion.me=side;const t=motionTally(),pass=t.aye>t.nay,m=motion,L=LAWS[m.key];
+ showMotion();if(pass)laws[m.key]=!m.on;render();
+ say(pass?`Referendum passes (${t.aye} to ${t.nay}): ${L.n} is ${m.on?'repealed':'now law'}. Roll the dice.`:`Referendum fails (${t.aye} to ${t.nay}): ${L.n} ${m.on?'stays in force':'is rejected'}. Roll the dice.`);
+ motion=null;$('roll').disabled=false}
+$('new').onclick=init;init();
+</script>
+</body>
+</html>
